@@ -53,7 +53,9 @@ def authorized_user(func):
     async def wrapper(update, context, *args, **kwargs):
         user_id = update.effective_user.id
         if user_id not in ALLOWED_USER_IDS:
-            await update.message.reply_text("Unauthorized access.")
+            instruction_message = "To get access, ask bot administrator to add your User ID: " \
+                                  f"`{user_id}` to the `ALLOWED_USER_IDS` array in `config.json` file."
+            await update.message.reply_text(f"Unauthorized access. {instruction_message}", parse_mode=telegram.constants.ParseMode.MARKDOWN)
             logger.warning(f"Unauthorized user {user_id} tried to access {func.__name__}")
             return
         return await func(update, context, *args, **kwargs)
@@ -204,8 +206,29 @@ async def edit_category(update, context):
 @authorized_user
 async def start(update, context):
     user = update.effective_user
+    main_functions_description = """
+    \n**Main Functions:**
+    - 📝 **Track Expenses:** Send messages like `Item{divider}Price` (e.g., `Coffee$10`) to record expenses.
+    - 📊 **Spending Reports:** Get summaries for today, this week, or this month.
+    - 🗂️ **Category Management:**  Organize your expenses by categories, and manage them easily.
+    - ⚙️ **Customizable Divider:** Set your preferred divider symbol (default is `$`).
+    """
+    commands_description = """
+    \n**Commands:**
+    /help - Show help message
+    /day [category] - Get spending for today
+    /week [category] - Get spending for this week
+    /month [category] - Get spending for this month
+    /setdivider [symbol] - Set divider symbol
+    /addcat [category name] - Add category
+    /removecat [category name] - Remove category
+    /editcat [old category] [new category] - Edit category
+    /categories - Show category buttons
+    """
     await update.message.reply_markdown_v2(
-        fr"Hi {user.mention_markdown_v2()}! I am your expense tracker bot\. Use bot menu button to see commands\.",
+        fr"Hi {user.mention_markdown_v2()}! I am your personal expense tracker bot\. \
+I help you manage your spendings by recording them in a Google Sheet\.{main_functions_description}{commands_description} \
+Use bot menu button to see commands for quick access\.",
     )
 
 
@@ -309,7 +332,7 @@ async def track_expense(update, context):
         await update.message.reply_text(f'Expense tracked: {item} - {price:.2f}{divider_symbol}{category_display}')
         context.user_data.pop('current_category', None) # Clear category after use
     except ValueError:
-        await update.message.reply_text(f'Incorrect format. Please use: Item {divider_symbol}Price (e.g., Coffee $10)')
+        await update.message.reply_text(f'Incorrect format. Please use: Item {divider_symbol}Price (e.g., Coffee {divider_symbol}10)')
     except Exception as e:
         logger.error(f"Error tracking expense: {e}")
         await update.message.reply_text('An error occurred. Please try again.')
@@ -336,14 +359,19 @@ async def callback_query_handler(update, context):
 # --- Error Handler ---
 async def error(update, context):
     logger.warning(f'Update {update} caused error {context.error}')
+    if update and update.effective_message: # Check if update and effective_message are valid
+        await update.effective_message.reply_text(f"An error occurred: `{context.error}`", parse_mode=telegram.constants.ParseMode.MARKDOWN)
+    else:
+        logger.error(f"Exception while handling an update: {context.error}")
+
 
 # --- Main Function ---
 def main():
     app = Application.builder().token(BOT_TOKEN).build()
 
-    # Define bot commands for menu button
+    # Define bot commands for menu using BotCommand objects
     bot_commands = [
-        BotCommand(command='start', description='Start the bot'),
+        BotCommand(command='start', description='Start the bot and show bot description and commands'),
         BotCommand(command='help', description='Show help message'),
         BotCommand(command='day', description='Get spending for today'),
         BotCommand(command='week', description='Get spending for this week'),
@@ -355,11 +383,12 @@ def main():
         BotCommand(command='categories', description='Show category buttons'),
     ]
 
+    # Use set_my_commands to configure the bot's commands menu in Telegram
     try:
         app.bot.set_my_commands(bot_commands)
-        logger.info("Bot commands set successfully.")
+        logger.info("Bot commands set successfully using setMyCommands.")
     except Exception as e:
-        logger.error(f"Failed to set bot commands: {e}")
+        logger.error(f"Failed to set bot commands using setMyCommands: {e}")
 
     # Command handlers
     app.add_handler(CommandHandler("start", start))
