@@ -2,5 +2,6 @@
     "BOT_TOKEN": "YOUR_TELEGRAM_BOT_TOKEN",
     "SPREADSHEET_ID": "YOUR_SPREADSHEET_ID",
     "SHEET_NAME": "Sheet1",
-    "CREDENTIALS_FILE": "credentials.json"
+    "CREDENTIALS_FILE": "credentials.json",
+    "ALLOWED_USER_IDS" : ["@excample(change this to your telegram username)"]
 }
