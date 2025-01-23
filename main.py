@@ -1,6 +1,6 @@
 # --- Telegram Bot Script ---
 import telegram
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup, BotCommand
 from telegram.ext import (
     Application,
     CommandHandler,
@@ -205,29 +205,9 @@ async def edit_category(update, context):
 async def start(update, context):
     user = update.effective_user
     await update.message.reply_markdown_v2(
-        fr"Hi {user.mention_markdown_v2()}! I am your expense tracker bot\. Use /menu to see commands\.",
-        reply_markup=InlineKeyboardMarkup([[InlineKeyboardButton("Open Menu", callback_data='menu')]]),
+        fr"Hi {user.mention_markdown_v2()}! I am your expense tracker bot\. Use bot menu button to see commands\.",
     )
 
-@authorized_user
-async def menu_command(update, context):
-    keyboard = [
-        [InlineKeyboardButton("Day Spending", callback_data='day')],
-        [InlineKeyboardButton("Week Spending", callback_data='week')],
-        [InlineKeyboardButton("Month Spending", callback_data='month')],
-        [InlineKeyboardButton("Set Divider", callback_data='set_divider_menu')],
-        [InlineKeyboardButton("Add Category", callback_data='add_category_menu')],
-        [InlineKeyboardButton("Remove Category", callback_data='remove_category_menu')],
-        [InlineKeyboardButton("Edit Category", callback_data='edit_category_menu')],
-        [InlineKeyboardButton("Help", callback_data='help')],
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    if update.message:
-        await update.message.reply_text("Menu:", reply_markup=reply_markup)
-    elif update.callback_query:
-        query = update.callback_query
-        await query.answer()
-        await query.edit_message_text("Menu:", reply_markup=reply_markup)
 
 @authorized_user
 async def set_divider_command(update, context):
@@ -265,7 +245,7 @@ async def help_command(update, context):
     help_text = """
     Expense Tracker Bot Commands:
 
-    /menu - Show menu with all commands.
+    Use bot menu button in chat for list of commands.
     /setdivider [symbol] - Set the divider symbol for price (default is $). Example: /setdivider #
     /day [category] - Get spending for today, optionally filter by category.
     /week [category] - Get spending for this week, optionally filter by category.
@@ -273,6 +253,7 @@ async def help_command(update, context):
     /addcat [category name] - Add a new spending category.
     /removecat [category name] - Remove a spending category.
     /editcat [old category] [new category] - Edit a spending category name.
+    /categories - Show category buttons to apply category for next expense.
     [Item][Divider][Price] - Send expense in this format to track it. Example: Coffee $10
     /help - Display this help message.
 
@@ -337,15 +318,7 @@ async def track_expense(update, context):
 async def callback_query_handler(update, context):
     query = update.callback_query
     await query.answer()
-    if query.data == 'menu':
-        await menu_command(update, context)
-    elif query.data == 'day':
-        await day_spending_command(update, context)
-    elif query.data == 'week':
-        await week_spending_command(update, context)
-    elif query.data == 'month':
-        await month_spending_command(update, context)
-    elif query.data == 'set_divider_menu':
+    if query.data == 'set_divider_menu':
         await query.edit_message_text("Use /setdivider command to set divider symbol.")
     elif query.data == 'add_category_menu':
         await query.edit_message_text("Use /addcat command to add category.")
@@ -366,12 +339,30 @@ async def error(update, context):
 
 # --- Main Function ---
 def main():
-
     app = Application.builder().token(BOT_TOKEN).build()
+
+    # Define bot commands for menu button
+    bot_commands = [
+        BotCommand(command='start', description='Start the bot'),
+        BotCommand(command='help', description='Show help message'),
+        BotCommand(command='day', description='Get spending for today'),
+        BotCommand(command='week', description='Get spending for this week'),
+        BotCommand(command='month', description='Get spending for this month'),
+        BotCommand(command='setdivider', description='Set divider symbol'),
+        BotCommand(command='addcat', description='Add category'),
+        BotCommand(command='removecat', description='Remove category'),
+        BotCommand(command='editcat', description='Edit category'),
+        BotCommand(command='categories', description='Show category buttons'),
+    ]
+
+    try:
+        app.bot.set_my_commands(bot_commands)
+        logger.info("Bot commands set successfully.")
+    except Exception as e:
+        logger.error(f"Failed to set bot commands: {e}")
 
     # Command handlers
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CommandHandler("menu", menu_command))
     app.add_handler(CommandHandler("help", help_command))
     app.add_handler(CommandHandler("setdivider", set_divider_command))
     app.add_handler(CommandHandler("day", day_spending_command))
@@ -380,7 +371,7 @@ def main():
     app.add_handler(CommandHandler("addcat", add_category))
     app.add_handler(CommandHandler("removecat", remove_category))
     app.add_handler(CommandHandler("editcat", edit_category))
-    app.add_handler(CommandHandler("categories", category_buttons)) # Command to show category buttons
+    app.add_handler(CommandHandler("categories", category_buttons))  # Command to show category buttons
 
     # Message handler
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, track_expense))
