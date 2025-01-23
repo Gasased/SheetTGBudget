@@ -1,0 +1,73 @@
+## Setting up Google Sheets Integration
+
+To connect your bot to Google Sheets, you'll need to configure a few things on the Google side. Here's a step-by-step guide to get you up and running:
+
+### 1. Get Your `credentials.json` File
+
+This file acts as your bot's key to access Google Sheets. Think of it as the secret handshake.
+
+**How to get it:**
+
+1.  Head over to the [Google Cloud Console](https://console.cloud.google.com/).
+2.  **Create or Choose a Project:** You can either make a new project or select an existing one.
+3.  **Enable APIs:**
+    *   Go to **APIs & Services** > **Library**.
+    *   Search for and enable the **Google Sheets API**.
+    *   Search for and enable the **Google Drive API**.
+4.  **Create a Service Account:**
+    *   Go to **APIs & Services** > **Credentials**.
+    *   Click **Create Credentials** > **Service Account**.
+    *   Fill out the details and click **Create**.
+5.  **Download Your Key:**
+    *   After creation, go to **Manage Keys**.
+    *   Click **Add Key** > **Create new key**.
+    *   Choose **JSON** as the format and download the file.
+    *   **Important:** Rename this file to `credentials.json` and save it in your project's directory.
+
+**Important Security Note:** Keep `credentials.json` private. Don't share it or commit it to version control. This file contains your bot's authentication details!
+
+---
+
+### 2. Get Your `SPREADSHEET_ID`
+
+This is like the address of your Google Sheet. It tells the bot exactly which spreadsheet to work with.
+
+**How to find it:**
+
+1.  Open the Google Sheet you want your bot to use.
+2.  Look at the URL in your browser. It will look something like this:
+    ```
+    https://docs.google.com/spreadsheets/d/<SPREADSHEET_ID>/edit
+    ```
+3.  Copy the string of characters between `/d/` and `/edit`.  That's your `SPREADSHEET_ID`!
+
+---
+
+### 3. Set Your `SHEET_NAME`
+
+This is the name of the specific tab or worksheet within your spreadsheet that the bot will interact with.
+
+**How to find it:**
+
+1.  Open your Google Sheet.
+2.  Look at the bottom of the screen for the tabs (e.g., "Sheet1", "Data", etc.).
+3.  The name of the tab you want your bot to use is your `SHEET_NAME`.
+
+---
+
+### 4. Share Your Google Sheet with the Service Account
+
+Think of it like giving your bot permission to work with the sheet.
+
+**How to do it:**
+
+1.  Open your Google Sheet.
+2.  Click **Share** (top-right).
+3.  In the sharing dialog, add the email address of the service account. You can find this in the `credentials.json` file under the `"client_email"` field.
+4.  Grant the service account **Editor** access, and click **Share**.
+
+---
+
+**You're Ready!**
+
+With these steps completed, you'll have your `CREDENTIALS_FILE`, `SPREADSHEET_ID`, and `SHEET_NAME` ready for use in your bot script. You can now start reading and writing data to Google Sheets!
